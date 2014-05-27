@@ -36,6 +36,11 @@
 	    <td>python2-distribute</td>
 		<td>python-setuptools</td>
 	</tr>
+	<tr>
+	    <td>Python YAML</td>
+	    <td>python2-yaml</td>
+		<td>python-yaml</td>
+	</tr>
     </tbody>
 </table>
 
@@ -57,10 +62,21 @@ execute copyfuse.py
 
    	./copyfuse.py user@email.com password /path/to/mount/point
 
+If you're on a shared machine where others can see the process list, you might not want to have them be able to see your username and password in teh process list.
+For this, specify a configuration file with the -c parameter.
+
+   	./copyfuse.py -c /etc/copyfuse.yaml
+
 to unmount your Copy account
 
 	fusermount -u /path/to/mount/point
 
+## Example configuration file
+
+	email:	user@email.com
+	pass:	password
+	mntdir:	/path/to/mount/point
+	
 ## Troubleshooting
 
 - SyntaxError: invalid token on line 228

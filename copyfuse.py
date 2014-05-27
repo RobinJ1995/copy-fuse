@@ -14,6 +14,8 @@ import time
 import json
 import hashlib
 import urllib3
+import sys
+import yaml
 
 from fuse import FUSE, FuseOSError, Operations, LoggingMixIn, fuse_get_context
 
@@ -230,11 +232,11 @@ class CopyFUSE(LoggingMixIn, Operations):
         return 0
 
     def statfs(self, path):
-    	params = {}
-    	response = self.copy_api.copygetrequest('/rest/user', params, True)
-    	blocks = response["storage"]["used"]/512
-    	bavail = response["storage"]["quota"]/512
-    	bfree  = (response["storage"]["quota"]-response["storage"]["used"])/512
+        params = {}
+        response = self.copy_api.copygetrequest('/rest/user', params, True)
+        blocks = response["storage"]["used"]/512
+        bavail = response["storage"]["quota"]/512
+        bfree  = (response["storage"]["quota"]-response["storage"]["used"])/512
         return dict(f_bsize=512, f_frsize=512, f_blocks=bavail, f_bfree=bfree, f_bavail=bfree)
 
     def getattr(self, path, fh=None):
@@ -245,7 +247,7 @@ class CopyFUSE(LoggingMixIn, Operations):
         else:
             name = str(os.path.basename(path))
             objects = self.copy_api.list_objects(os.path.dirname(path))
-
+            
             if name not in objects:
                 raise FuseOSError(ENOENT)
             elif objects[name]['type'] == 'file':
@@ -271,9 +273,9 @@ class CopyFUSE(LoggingMixIn, Operations):
         if response['result'] != 'success':
             raise FuseOSError(EIO)
 
-	# update tree_children
- 	name = os.path.basename(path)
- 	self.copy_api.tree_children[os.path.dirname(path)][name] = {'name': name, 'type': 'dir', 'size': 0, 'ctime': time.time(), 'mtime': time.time()}
+        # update tree_children
+        name = os.path.basename(path)
+        self.copy_api.tree_children[os.path.dirname(path)][name] = {'name': name, 'type': 'dir', 'size': 0, 'ctime': time.time(), 'mtime': time.time()}
 
     def open(self, path, flags):
         # print "open: " + path
@@ -359,7 +361,7 @@ class CopyFUSE(LoggingMixIn, Operations):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Fuse filesystem for Copy.com')
+    description='Fuse filesystem for Copy.com')
 
     parser.add_argument(
         '-d', '--debug', default=False, action='store_true',
@@ -372,19 +374,34 @@ def main():
         help='run in foreground')
     parser.add_argument(
         '-o', '--options', help='add extra fuse options (see "man fuse")')
+    parser.add_argument(
+        '-c', '--config', metavar='CONFIG', help='specify configuration file containing EMAIL, PASS and MNTDIR')
 
     parser.add_argument(
-        'username', metavar='EMAIL', help='username/email')
+        'username', metavar='EMAIL', nargs='?', help='username/email')
     parser.add_argument(
-        'password', metavar='PASS', help='password')
+        'password', metavar='PASS', nargs='?', help='password')
     parser.add_argument(
-        'mount_point', metavar='MNTDIR', help='directory to mount filesystem at')
+        'mount_point', metavar='MNTDIR', nargs='?', help='directory to mount filesystem at')
 
     args = parser.parse_args(argv[1:])
 
     username = args.__dict__.pop('username')
     password = args.__dict__.pop('password')
     mount_point = args.__dict__.pop('mount_point')
+
+    if not username and not password and not mount_point:
+        configfile = args.__dict__.pop('config')
+        
+        if not configfile:
+            sys.exit('Specify either EMAIL, PASS and MNTDIR or CONFIG.')
+        
+        stream = open(configfile, 'r')
+        config = yaml.load (stream)
+        
+        username = config['email']
+        password = config['pass']
+        mount_point = config['mntdir']
 
     # parse options
     options_str = args.__dict__.pop('options')
@@ -402,4 +419,4 @@ def main():
 
 
 if __name__ == "__main__":
-	main()
+    main()
