@@ -62,7 +62,7 @@ execute copyfuse.py
 
    	./copyfuse.py user@email.com password /path/to/mount/point
 
-If you're on a shared machine where others can see the process list, you might not want to have them be able to see your username and password in teh process list.
+If you're on a shared machine where others can see the process list, you might not want to have them be able to see your username and password in the process list.
 For this, specify a configuration file with the -c parameter.
 
    	./copyfuse.py -c /etc/copyfuse.yaml
